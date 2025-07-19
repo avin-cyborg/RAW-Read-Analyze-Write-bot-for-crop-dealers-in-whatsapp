@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot Control</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 90vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #555;
+            min-height: 20px; /* To prevent layout shift when text appears */
+        }
+        #automationButton {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            width: 80%;
+            max-width: 300px;
+            margin-top: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-color: #3498db; /* Blue for ON */
+            color: white;
+        }
+        #automationButton.off {
+            background-color: #e74c3c; /* Red for OFF */
+        }
+        #automationButton.dimmed {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #cccccc; /* Grey when disabled */
+            color: #666;
+            box-shadow: none;
+        }
+        #automationButton:not(.dimmed):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #automationButton:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WhatsApp Bot Control Panel</h1>
+        <button id="automationButton" class="dimmed">Connecting...</button>
+        <p id="status">Establishing connection to server...</p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const automationButton = document.getElementById('automationButton');
+        const statusParagraph = document.getElementById('status');
+        let currentAutomationStatus = false;
+
+        function updateButtonUI(isEnabled, automationState) {
+            if (isEnabled) {
+                automationButton.classList.remove('dimmed');
+                automationButton.disabled = false;
+                if (automationState === true) {
+                    automationButton.textContent = 'Turn Automation OFF';
+                    automationButton.classList.remove('off'); // Remove red class if ON
+                } else {
+                    automationButton.textContent = 'Turn Automation ON';
+                    automationButton.classList.add('off'); // Add red class if OFF
+                }
+            } else {
+                // Dim and disable button if connection is not ready or failed
+                automationButton.classList.add('dimmed');
+                automationButton.disabled = true;
+                automationButton.textContent = 'Connecting...';
+                automationButton.classList.remove('off'); // Remove any state colors
+            }
+        }
+
+        // Initial state: dimmed, connecting
+        updateButtonUI(false, false);
+
+        socket.on('connect', () => {
+            console.log('Socket.IO connected. Awaiting bot status...');
+            statusParagraph.textContent = 'Web UI connected. Awaiting bot status...';
+            // When connected, we assume the button can be interacted with,
+            // but its ON/OFF text will be set by the 'automation_status' event.
+            // Temporarily enable button, final text set by automation_status.
+            updateButtonUI(true, currentAutomationStatus); 
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Socket.IO disconnected.');
+            statusParagraph.textContent = 'Web UI disconnected. Attempting to reconnect...';
+            updateButtonUI(false, false); // Dim button on disconnect
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Socket.IO connection error:', error);
+            statusParagraph.textContent = `Connection error: ${error.message}. Retrying...`;
+            updateButtonUI(false, false); // Keep button dimmed on error
+        });
+
+        socket.on('status', (data) => {
+            statusParagraph.textContent = data.message;
+        });
+
+        socket.on('automation_status', (isEnabled) => {
+            currentAutomationStatus = isEnabled;
+            // The button is confirmed enabled by this point because we received a status.
+            updateButtonUI(true, currentAutomationStatus);
+            console.log(`Automation status received: ${isEnabled}`);
+        });
+
+        automationButton.addEventListener('click', () => {
+            // Only allow click if button is not dimmed and not disabled
+            if (!automationButton.disabled) {
+                const newState = !currentAutomationStatus;
+                socket.emit('toggle_automation', newState);
+                automationButton.textContent = `Turning Automation ${newState ? 'ON' : 'OFF'}...`; // Provide immediate feedback
+                automationButton.disabled = true; // Disable until confirmation from server
+                automationButton.classList.add('dimmed'); // Dim while waiting for server response
+            }
+        });
+
+    </script>
+</body>
+</html>
