@@ -1,6 +1,15 @@
 # WhatsApp Market Intelligence Bot
 
-A powerful Node.js bot designed to automate the extraction, translation, and distribution of crop market offers received via WhatsApp. It includes a user-friendly local web interface for easy control and monitoring.
+A powerful Node.js bot designed to automate the extraction, translation, and distribution of crop market offers received via WhatsApp. **Currently, over 1,000 agricultural brokers across Telangana rely on this bot for their day-to-day operations, with each instance deployed locally to ensure complete control and zero hosting costs.** It includes a user-friendly local web interface for easy management and monitoring.
+
+## 🎯 Problem Statement & Design Philosophy
+
+Agricultural commodity brokers receive hundreds of raw, unformatted crop offers daily via WhatsApp. Manually reading, standardizing, translating, and forwarding these messages to appropriate buyer groups is highly time-consuming and prone to human error. 
+
+**Why this bot is 100% Free:**
+This project was deliberately architected to circumvent the steep costs typically associated with enterprise bot development so that people can run it for free:
+* **`whatsapp-web.js` vs. WhatsApp Business API:** We deliberately chose `whatsapp-web.js` because it acts as a wrapper for WhatsApp Web, completely bypassing the expensive per-message costs and strict template approvals required by the official Meta/WhatsApp Business API.
+* **Google Gemini vs. ChatGPT:** We chose Google Gemini for our AI extraction engine because it offers a highly generous free tier (unlike OpenAI's ChatGPT, which charges for every API call), allowing the bot to process massive amounts of market data at zero cost to the user.
 
 ## ✨ Features
 
@@ -17,6 +26,31 @@ A powerful Node.js bot designed to automate the extraction, translation, and dis
 * **Email Notifications**: Sends automated email alerts for failed message processing, providing crucial details for quick intervention.
 * **Market Statistics Storage**: Saves processed market data for future analysis or display.
 * **Graceful Error Handling**: Implements error capture and reporting for critical operational failures.
+
+## 🔗 Deployment Link
+
+[demo deployment link will be provided soon]
+
+## 📸 Output Images
+
+<img width="3044" height="1841" alt="image" src="https://github.com/user-attachments/assets/a8dd900e-49fb-41e5-9efe-7e2c601bbeaf" /><img width="2681" height="672" alt="image" src="https://github.com/user-attachments/assets/ce048c07-978d-4057-8cd2-4e87c2a74ea3" /><img width="3839" height="1925" alt="image" src="https://github.com/user-attachments/assets/3b37da34-c176-4cf5-80f1-2adaed5cf844" /><img width="3839" height="1922" alt="image" src="https://github.com/user-attachments/assets/35120850-35aa-46bc-bed2-504500119e0f" /><img width="3271" height="2011" alt="image" src="https://github.com/user-attachments/assets/10deea25-fdff-4284-bda4-9b93357fb053" /><img width="2938" height="2006" alt="image" src="https://github.com/user-attachments/assets/ae5df5f5-25aa-46b3-9170-a03dbcb7a35d" /><img width="2931" height="1999" alt="image" src="https://github.com/user-attachments/assets/4060544d-811d-4bcf-96dc-4c80c2d357c2" /><img width="2706" height="2016" alt="image" src="https://github.com/user-attachments/assets/6f440680-d2fd-493b-9ec1-8b74826623da" /><img width="2954" height="1270" alt="image" src="https://github.com/user-attachments/assets/8ec3d6eb-a07e-42cf-b8ed-1d80237ad33d" /><img width="3003" height="2124" alt="image" src="https://github.com/user-attachments/assets/a4dd2f26-44bb-4d7e-b19c-68cfe569a053" /><img width="2977" height="2159" alt="image" src="https://github.com/user-attachments/assets/607cd10a-8a0f-4c91-853f-0365f3ba8916" /><img width="3004" height="2134" alt="image" src="https://github.com/user-attachments/assets/b80e78a5-1c8c-4e35-9e3d-ffeff2a6c53f" /><img width="2984" height="2122" alt="image" src="https://github.com/user-attachments/assets/ecb23b52-ae1d-4d22-b668-e4808a5cdeaf" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## 🚀 Getting Started
 
@@ -36,7 +70,7 @@ Ensure you have the following installed on your system:
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/avin-cyborg/RAW-Read-Analyze-Write-bot-for-crop-dealers-in-whatsapp]
+    git clone [[https://github.com/avin-cyborg/RAW-Read-Analyze-Write-bot-for-crop-dealers-in-whatsapp](https://github.com/avin-cyborg/RAW-Read-Analyze-Write-bot-for-crop-dealers-in-whatsapp)]
     cd YOUR_REPO_NAME
     ```
 
@@ -158,12 +192,24 @@ This outlines the key files and directories within your bot's project:
     * Verify `botAutomationEnabled` is `true` via the local UI.
     * Double-check that the `SELLER_GROUP_IDS` in `config.js` exactly match the serialized IDs of your seller WhatsApp groups.
     * Review the bot's logs in the terminal or local UI for any errors or warnings.
+* **Dependencies Outdated / WhatsApp Web Updates**:
+    * WhatsApp frequently updates its internal web code, which can break the bot's connection. You must regularly keep upgrading your Node packages to ensure the bot stays compatible. Run these commands in your terminal to update the core packages:
+      ```bash
+      npm install whatsapp-web.js@latest
+      npm install puppeteer@latest
+      ```
 * **Gemini API Errors**:
     * Ensure your `GEMINI_API_KEY` in `.env` is correct and active.
     * Check if you've enabled the necessary Gemini API services in your Google Cloud Project.
 * **Email Notifications Failing**:
     * Confirm `NODEMAILER_EMAIL`, `NODEMAILER_PASSWORD`, and `ERROR_RECIPIENT_EMAIL` are correctly set in `.env`.
     * If using Gmail, ensure you're using an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
+
+## 🤝 Contact & Custom Bot Requests
+
+If you need a tailored or more customized version of this bot designed specifically for your unique business operations, feel free to reach out! 
+
+📧 **Email me at:** [Insert your email address here]
 
 ## Contributing
 
