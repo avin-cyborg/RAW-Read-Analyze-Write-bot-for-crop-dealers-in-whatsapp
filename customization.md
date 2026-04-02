@@ -1,4 +1,4 @@
-# 📚 WhatsApp Bot Customer Support & Customization Guide
+# 📚 WhatsApp Bot User Support & Customization Guide
 
 Welcome! This guide is designed for users who want to understand how the bot works or make changes to it without needing a computer science degree. We will break down the project file by file.
 
