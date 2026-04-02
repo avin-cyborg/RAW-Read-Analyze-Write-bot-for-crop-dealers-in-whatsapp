@@ -5,8 +5,8 @@
 
 const SELLER_GROUP_IDS = [
     '000000000000000000@g.us' // Seller Group 1:Replace with actual ID
-    //'120363403964644334@g.us', // Seller Group 2
-    //'120363401097138757@g.us'  // Seller Group 3
+    //'120363403334644334@g.us', // Seller Group 2
+    //'120369991097138757@g.us'  // Seller Group 3
     // Add more seller group IDs as needed
 ];
 
