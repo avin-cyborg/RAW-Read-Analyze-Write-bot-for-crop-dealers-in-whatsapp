@@ -1,4 +1,4 @@
-# WhatsApp Market Intelligence Bot
+# RAW-Read-Analyze-Write-bot-for-crop-dealers-in-whatsapp
 
 A powerful Node.js bot designed to automate the extraction, translation, and distribution of crop market offers received via WhatsApp. **Currently, over 1,000 agricultural brokers across Telangana rely on this bot for their day-to-day operations, with each instance deployed locally to ensure complete control and zero hosting costs.** It includes a user-friendly local web interface for easy management and monitoring.
 
