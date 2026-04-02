@@ -18,6 +18,11 @@ const MARKET_STATS_FILE = './market_stats.json';
 
 let botAutomationEnabled = false;
 
+// --- START: BATCH PROCESSING QUEUE VARIABLES ---
+const messageQueue = [];
+let isProcessingQueue = false;
+// --- END: BATCH PROCESSING QUEUE VARIABLES ---
+
 // --- START: REINSTATED OILS HANDLING WITH CAREFUL CLEANING ---
 
 // List of keywords to identify an OILS message.
@@ -153,7 +158,6 @@ function stripUnwantedContentFromOilsMessage(rawText) {
     // --- END: FINAL ASSEMBLY ---
 }
 // --- END: REINSTATED OILS HANDLING WITH CAREFUL CLEANING ---
-// index1.js
 
 // --- START: NEW HELPER FUNCTION ---
 /**
@@ -180,15 +184,6 @@ function applyPostProcessingReplacements(text, lang) {
     return processedText;
 }
 // --- END: NEW HELPER FUNCTION ---
-
-
-
-
-
-
-
-
-
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -330,232 +325,272 @@ async function processMessageWithRetries(messageContent, targetLanguages) {
   throw new Error('Gemini failed after all retries.');
 }
 
-client.on('message', async (msg) => {
-  logger.info(`[RAW MESSAGE] From: ${msg.from}, IsGroup: ${msg.isGroup}, Body: ${msg.body.substring(0, 100)}...`);
-  const isActuallyGroup = msg.isGroup === true || (typeof msg.isGroup === 'undefined' && msg.from.endsWith('@g.us'));
-  if (!botAutomationEnabled || !isActuallyGroup || !SELLER_GROUP_IDS.includes(msg.from)) {
-    if (isActuallyGroup && SELLER_GROUP_IDS.includes(msg.from) && !botAutomationEnabled) {
-      const chat = await msg.getChat();
-      logger.info(`Automation OFF: Skipped message from seller group "${chat.name}".`);
-    } else if (!isActuallyGroup) {
-      const contact = await msg.getContact();
-      logger.info(`DM from ${contact.pushname || contact.name}, skipped.`);
-    } else {
-      const chat = await msg.getChat();
-      logger.info(`Skipped message from non-seller group "${chat.name}" (${msg.from}).`);
-    }
+// --- START: BATCH PROCESSING WORKER ---
+async function processMessageQueue() {
+  // If the worker is already running or the queue is empty, do nothing
+  if (isProcessingQueue || messageQueue.length === 0) {
     return;
   }
-  logger.info(`Processing message from seller group ${msg.from}`);
-  io.emit('status', { message: `Processing message from seller group ${msg.from}` });
-  // --- START: REINSTATED OILS BYPASS LOGIC ---
 
-// Check if the message is for the OILS category
-if (isOilsMessage(msg.body)) {
-    logger.info('OILS message detected. Bypassing Gemini and using simplified formatting.');
-    io.emit('status', { message: 'OILS message detected. Formatting simply...' });
+  // Lock the queue so no other worker starts
+  isProcessingQueue = true;
+  logger.info(`Started processing queue. Messages waiting: ${messageQueue.length}`);
 
-    // 1. Clean the message by carefully removing only unwanted content
-    const cleanedMessageBody = stripUnwantedContentFromOilsMessage(msg.body);
+  while (messageQueue.length > 0) {
+    // Take the oldest message out of the front of the queue
+    const msg = messageQueue.shift(); 
+    
+    logger.info(`Processing message from seller group ${msg.from}. Remaining in queue: ${messageQueue.length}`);
+    io.emit('status', { message: `Processing message from ${msg.from}. Queue length: ${messageQueue.length}` });
 
-    // 2. Append the standard broker information
-    const brokerInfoText = 'A MARKET LOOKS\n\n*NO CASH ONLY GPAY, PHONEPE, UPI TO : 6300486156*';
-    const finalMessage = cleanedMessageBody + '\n\n' + brokerInfoText;
+    // --- START: REINSTATED OILS BYPASS LOGIC ---
+    if (isOilsMessage(msg.body)) {
+      logger.info('OILS message detected. Bypassing Gemini and using simplified formatting.');
+      io.emit('status', { message: 'OILS message detected. Formatting simply...' });
 
-    try {
-        // Safety check: Only send if there's actual content after cleaning.
+      const cleanedMessageBody = stripUnwantedContentFromOilsMessage(msg.body);
+      const brokerInfoText = 'A MARKET LOOKS\n\n*NO CASH ONLY GPAY, PHONEPE, UPI TO : 6300486156*';
+      const finalMessage = cleanedMessageBody + '\n\n' + brokerInfoText;
+
+      try {
         if (cleanedMessageBody.trim().length === 0) {
-            logger.warn('⚠️ OILS message was empty after cleaning. Skipping sending.');
-            io.emit('status', { message: '⚠️ OILS message empty after cleaning. Skipped.' });
+          logger.warn('⚠️ OILS message was empty after cleaning. Skipping sending.');
+          io.emit('status', { message: '⚠️ OILS message empty after cleaning. Skipped.' });
         } else {
-            const oilGroups = BUYER_GROUP_MAPPING['OILS'];
-
-            // Send to OILS buyer groups (English and Telugu)
-            if (oilGroups) {
-                if (oilGroups.en) {
-                    await client.sendMessage(oilGroups.en, finalMessage);
-                    logger.info(`✅ Sent simplified OILS message to English buyer group: ${oilGroups.en}`);
-                }
-                if (oilGroups.te) {
-                    await client.sendMessage(oilGroups.te, finalMessage);
-                    logger.info(`✅ Sent simplified OILS message to Telugu buyer group: ${oilGroups.te}`);
-                }
+          const oilGroups = BUYER_GROUP_MAPPING['OILS'];
+          if (oilGroups) {
+            if (oilGroups.en) {
+              await client.sendMessage(oilGroups.en, finalMessage);
+              logger.info(`✅ Sent simplified OILS message to English buyer group: ${oilGroups.en}`);
             }
-
-            // Send to the "All Updates" group
-            if (ALL_UPDATES_GROUP_ID) {
-                await client.sendMessage(ALL_UPDATES_GROUP_ID, finalMessage);
-                logger.info(`✅ Sent simplified OILS message to the All Updates group: ${ALL_UPDATES_GROUP_ID}`);
+            if (oilGroups.te) {
+              await client.sendMessage(oilGroups.te, finalMessage);
+              logger.info(`✅ Sent simplified OILS message to Telugu buyer group: ${oilGroups.te}`);
             }
+          }
+          if (ALL_UPDATES_GROUP_ID) {
+            await client.sendMessage(ALL_UPDATES_GROUP_ID, finalMessage);
+            logger.info(`✅ Sent simplified OILS message to the All Updates group: ${ALL_UPDATES_GROUP_ID}`);
+          }
         }
-
-    } catch (err) {
+      } catch (err) {
         logger.error(`❌ Failed to send simplified OILS message: ${err.message}`);
         io.emit('status', { message: `❌ Error sending OILS message: ${err.message}` });
+      }
+      
+      // Move to the next message in the queue
+      continue; 
     }
+    // --- END: REINSTATED OILS BYPASS LOGIC ---
 
-    // IMPORTANT: Stop further processing for this message
-    return;
-}
-
-// --- END: REINSTATED OILS BYPASS LOGIC ---
-
-
-  try {
-    const chat = await msg.getChat();
-    logger.info(`Received message in seller group "${chat.name}": "${msg.body}"`);
-    // Process message with Gemini with retry logic
-    let processedOffers = {};
+    // --- START: GEMINI PROCESSING LOGIC ---
     try {
-      processedOffers = await processMessageWithRetries(msg.body, TARGET_LANGUAGES);
-    } catch (geminiError) {
-      logger.error(`Gemini processing failed: ${geminiError.message}`);
-      io.emit('status', { message: `❌ Gemini processing failed: ${geminiError.message}` });
+      const chat = await msg.getChat();
+      logger.info(`Received message in seller group "${chat.name}": "${msg.body}"`);
+      
+      let processedOffers = {};
+      try {
+        processedOffers = await processMessageWithRetries(msg.body, TARGET_LANGUAGES);
+      } catch (geminiError) {
+        logger.error(`Gemini processing failed: ${geminiError.message}`);
+        io.emit('status', { message: `❌ Gemini processing failed: ${geminiError.message}` });
+        let logReportContent = '';
+        try {
+          logReportContent = readLatestLogTail(200);
+        } catch (readErr) {
+          logReportContent = `Error reading logs: ${readErr.message}`;
+        }
+        await sendErrorEmail(msg.body, geminiError.message, logReportContent);
+        continue; // Skip to next message in queue instead of returning
+      }
+      
+      logger.info('Gemini processing complete.');
+      logger.info(`Processed Offers: ${JSON.stringify(processedOffers, null, 2)}`);
+      
+      if (processedOffers && typeof processedOffers === 'object' && Object.keys(processedOffers).length > 0) {
+        logger.info('Preparing to send summaries to buyer groups.');
+        const groupedMessages = { en: {}, te: {} };
+        const allUpdatesContent = { en: [], te: [] };
+        
+        for (const extractedName in processedOffers) {
+          const offer = processedOffers[extractedName];
+          const category = offer.category;
+          
+          if (category && BUYER_GROUP_MAPPING[category]) {
+            if (!groupedMessages.en[category]) groupedMessages.en[category] = [];
+            if (!groupedMessages.te[category]) groupedMessages.te[category] = [];
+            
+            if (offer.en) {
+              const finalEnglishText = applyPostProcessingReplacements(offer.en, 'en');
+              groupedMessages.en[category].push(finalEnglishText);
+            }
+            if (offer.te) {
+              const finalTeluguText = applyPostProcessingReplacements(offer.te, 'te');
+              groupedMessages.te[category].push(finalTeluguText);
+            }
+          } else {
+            logger.warn(`No buyer group mapping for category "${category}", offer "${offer.standardizedName}" (original: ${extractedName})`);
+          }
+        }
+        
+        const brokerInfoLines = [
+          'A MARKET LOOKS',
+          '*NO CASH ONLY GPAY, PHONEPE, UPI TO : 6300486156*'
+        ];
+        const brokerInfoText = brokerInfoLines.join('\n\n');
+        
+        // Send to targeted buyer groups
+        for (const category in groupedMessages.en) {
+          const englishConsolidatedMessage = groupedMessages.en[category].join('\n') + '\n\n' + brokerInfoText;
+          const teluguConsolidatedMessage  = groupedMessages.te[category].join('\n') + '\n\n' + brokerInfoText;
+          const categoryGroups = BUYER_GROUP_MAPPING[category];
+          
+          if (englishConsolidatedMessage && categoryGroups && categoryGroups.en) {
+            const buyerGroupId = categoryGroups.en;
+            try {
+              const buyerChat = await client.getChatById(buyerGroupId);
+              if (buyerChat && buyerChat.isGroup) {
+                if (englishConsolidatedMessage.trim().length > 0) {
+                  await client.sendMessage(buyerGroupId, englishConsolidatedMessage);
+                  logger.info(`✅Sent English message for category "${category}" to group "${buyerChat.name}"`);
+                  io.emit('status', { message: `Sent English message for category "${category}" to group "${buyerChat.name}".` });
+                  allUpdatesContent.en.push(`--- ${category.toUpperCase()} (ENGLISH) ---\n${englishConsolidatedMessage}`);
+                } else {
+                  logger.warn(`Empty English message for category "${category}", skipping.`);
+                }
+              } else {
+                logger.warn(`Buyer group ID for category "${category}" (English) invalid or not a group: ${buyerGroupId}`);
+              }
+            } catch (sendErr) {
+              logger.error(`Error sending English message for "${category}": ${sendErr.message}`);
+            }
+          }
+          
+          if (teluguConsolidatedMessage && categoryGroups && categoryGroups.te) {
+            const buyerGroupId = categoryGroups.te;
+            try {
+              const buyerChat = await client.getChatById(buyerGroupId);
+              if (buyerChat && buyerChat.isGroup) {
+                if (teluguConsolidatedMessage.trim().length > 0) {
+                  await client.sendMessage(buyerGroupId, teluguConsolidatedMessage);
+                  logger.info(`✅Sent Telugu message for category "${category}" to group "${buyerChat.name}"`);
+                  io.emit('status', { message: `Sent Telugu message for category "${category}" to group "${buyerChat.name}".` });
+                  allUpdatesContent.te.push(`--- ${category.toUpperCase()} (TELUGU) ---\n${teluguConsolidatedMessage}`);
+                } else {
+                  logger.warn(`Empty Telugu message for category "${category}", skipping.`);
+                }
+              } else {
+                logger.warn(`Buyer group ID for category "${category}" (Telugu) invalid or not a group: ${buyerGroupId}`);
+              }
+            } catch (sendErr) {
+              logger.error(`Error sending Telugu message for "${category}": ${sendErr.message}`);
+            }
+          }
+        }
+        
+        // Send to All Updates
+        if (ALL_UPDATES_GROUP_ID) {
+          try {
+            const allUpdatesChat = await client.getChatById(ALL_UPDATES_GROUP_ID);
+            if (allUpdatesChat && allUpdatesChat.isGroup) {
+              const combinedEnglish = allUpdatesContent.en.join('\n');
+              if (combinedEnglish.trim().length > 0) {
+                await client.sendMessage(ALL_UPDATES_GROUP_ID, `${combinedEnglish}`);
+                logger.info('✅Sent combined English updates to All Updates group.');
+                io.emit('status', { message: 'Sent combined English updates to All Updates group.' });
+              } else {
+                logger.warn('Empty combined English updates for All Updates group. Skipped sending.');
+              }
+              const combinedTelugu = allUpdatesContent.te.join('\n');
+              if (combinedTelugu.trim().length > 0) {
+                await client.sendMessage(ALL_UPDATES_GROUP_ID, `${combinedTelugu}`);
+                logger.info('✅Sent combined Telugu updates to All Updates group.');
+                io.emit('status', { message: 'Sent combined Telugu updates to All Updates group.' });
+              } else {
+                logger.warn('Empty combined Telugu updates for All Updates group. Skipped sending.');
+              }
+            } else {
+              logger.warn('All Updates group ID invalid or not a group.');
+              io.emit('status', { message: '⚠️ All Updates group ID invalid or non-existing.' });
+            }
+          } catch (err) {
+            logger.error('Error sending to All Updates group: ' + err.message);
+            io.emit('status', { message: '❌ Failed to send to All Updates group.' });
+          }
+        } else {
+          logger.warn('All Updates group ID not configured, skipped sending combined update.');
+        }
+      } else {
+        logger.warn('No valid processed offers received from Gemini.');
+        io.emit('status', { message: '⚠️ No valid offers from Gemini. Skipping forwarding.' });
+      }
+    } catch (err) {
+      logger.error(`Error processing message from ${msg.from}: ${err.message}`);
+      io.emit('status', { message: `❌ Error processing message: ${err.message}` });
       let logReportContent = '';
       try {
         logReportContent = readLatestLogTail(200);
       } catch (readErr) {
-        logReportContent = `Error reading logs: ${readErr.message}`;
+        logReportContent = `Error reading logs: ${readErr.message}... `;
       }
-      await sendErrorEmail(msg.body, geminiError.message, logReportContent);
-      return;
+      await sendErrorEmail(msg.body, err.message, logReportContent);
     }
-    logger.info('Gemini processing complete.');
-    logger.info(`Processed Offers: ${JSON.stringify(processedOffers, null, 2)}`);
-    if (processedOffers && typeof processedOffers === 'object' && Object.keys(processedOffers).length > 0) {
-      logger.info('Preparing to send summaries to buyer groups.');
-      const groupedMessages = { en: {}, te: {} };
-      const allUpdatesContent = { en: [], te: [] };
-      // Group messages by category and language
-      for (const extractedName in processedOffers) {
-        const offer = processedOffers[extractedName];
-        const category = offer.category;
-        if (category && BUYER_GROUP_MAPPING[category]) {
-          if (!groupedMessages.en[category]) {
-            groupedMessages.en[category] = [];
-          }
-          if (!groupedMessages.te[category]) {
-            groupedMessages.te[category] = [];
-          }
-          // NEW, IMPROVED CODE
-          if (offer.en) {
-            const finalEnglishText = applyPostProcessingReplacements(offer.en, 'en');
-            groupedMessages.en[category].push(finalEnglishText);
-        }
-        if (offer.te) {
-    // This replaces your previous hardcoded "రాక" replacement logic.
-          const finalTeluguText = applyPostProcessingReplacements(offer.te, 'te');
-          groupedMessages.te[category].push(finalTeluguText);
-        }
+    // --- END: GEMINI PROCESSING LOGIC ---
 
-        } else {
-          logger.warn(`No buyer group mapping for category "${category}", offer "${offer.standardizedName}" (original: ${extractedName})`);
-        }
-      }
-      // Broker company info to append
-      const brokerInfoLines = [
-        'A MARKET LOOKS',
-        '*NO CASH ONLY GPAY, PHONEPE, UPI TO : 6300486156*'
-      ];
-      const brokerInfoText = brokerInfoLines.join('\n\n');
-      // Send grouped messages to buyer groups (English & Telugu)
-      for (const category in groupedMessages.en) {
-        // ===== ONLY CHANGE MADE: separator removed =====
-        const englishConsolidatedMessage = groupedMessages.en[category].join('\n') + '\n\n' + brokerInfoText;
-        const teluguConsolidatedMessage  = groupedMessages.te[category].join('\n') + '\n\n' + brokerInfoText;
-        // ==============================================
-        const categoryGroups = BUYER_GROUP_MAPPING[category];
-        // English message
-        if (englishConsolidatedMessage && categoryGroups && categoryGroups.en) {
-          const buyerGroupId = categoryGroups.en;
-          try {
-            const buyerChat = await client.getChatById(buyerGroupId);
-            if (buyerChat && buyerChat.isGroup) {
-              if (englishConsolidatedMessage.trim().length > 0) {
-                await client.sendMessage(buyerGroupId, englishConsolidatedMessage);
-                logger.info(`✅Sent English message for category "${category}" to group "${buyerChat.name}"`);
-                io.emit('status', { message: `Sent English message for category "${category}" to group "${buyerChat.name}".` });
-                allUpdatesContent.en.push(`--- ${category.toUpperCase()} (ENGLISH) ---\n${englishConsolidatedMessage}`);
-              } else {
-                logger.warn(`Empty English message for category "${category}", skipping.`);
-              }
-            } else {
-              logger.warn(`Buyer group ID for category "${category}" (English) invalid or not a group: ${buyerGroupId}`);
-            }
-          } catch (sendErr) {
-            logger.error(`Error sending English message for "${category}": ${sendErr.message}`);
-          }
-        }
-        // Telugu message
-        if (teluguConsolidatedMessage && categoryGroups && categoryGroups.te) {
-          const buyerGroupId = categoryGroups.te;
-          try {
-            const buyerChat = await client.getChatById(buyerGroupId);
-            if (buyerChat && buyerChat.isGroup) {
-              if (teluguConsolidatedMessage.trim().length > 0) {
-                await client.sendMessage(buyerGroupId, teluguConsolidatedMessage);
-                logger.info(`✅Sent Telugu message for category "${category}" to group "${buyerChat.name}"`);
-                io.emit('status', { message: `Sent Telugu message for category "${category}" to group "${buyerChat.name}".` });
-                allUpdatesContent.te.push(`--- ${category.toUpperCase()} (TELUGU) ---\n${teluguConsolidatedMessage}`);
-              } else {
-                logger.warn(`Empty Telugu message for category "${category}", skipping.`);
-              }
-            } else {
-              logger.warn(`Buyer group ID for category "${category}" (Telugu) invalid or not a group: ${buyerGroupId}`);
-            }
-          } catch (sendErr) {
-            logger.error(`Error sending Telugu message for "${category}": ${sendErr.message}`);
-          }
-        }
-      }
-      // Send combined summary to All Updates group if configured
-      if (ALL_UPDATES_GROUP_ID) {
-        try {
-          const allUpdatesChat = await client.getChatById(ALL_UPDATES_GROUP_ID);
-          if (allUpdatesChat && allUpdatesChat.isGroup) {
-            const combinedEnglish = allUpdatesContent.en.join('\n');
-            if (combinedEnglish.trim().length > 0) {
-              await client.sendMessage(ALL_UPDATES_GROUP_ID, `${combinedEnglish}`);
-              logger.info('✅Sent combined English updates to All Updates group.');
-              io.emit('status', { message: 'Sent combined English updates to All Updates group.' });
-            } else {
-              logger.warn('Empty combined English updates for All Updates group. Skipped sending.');
-            }
-            const combinedTelugu = allUpdatesContent.te.join('\n');
-            if (combinedTelugu.trim().length > 0) {
-              await client.sendMessage(ALL_UPDATES_GROUP_ID, `${combinedTelugu}`);
-              logger.info('✅Sent combined Telugu updates to All Updates group.');
-              io.emit('status', { message: 'Sent combined Telugu updates to All Updates group.' });
-            } else {
-              logger.warn('Empty combined Telugu updates for All Updates group. Skipped sending.');
-            }
-          } else {
-            logger.warn('All Updates group ID invalid or not a group.');
-            io.emit('status', { message: '⚠️ All Updates group ID invalid or non-existing.' });
-          }
-        } catch (err) {
-          logger.error('Error sending to All Updates group: ' + err.message);
-          io.emit('status', { message: '❌ Failed to send to All Updates group.' });
-        }
-      } else {
-        logger.warn('All Updates group ID not configured, skipped sending combined update.');
-      }
-    } else {
-      logger.warn('No valid processed offers received from Gemini.');
-      io.emit('status', { message: '⚠️ No valid offers from Gemini. Skipping forwarding.' });
-    }
-  } catch (err) {
-    logger.error(`Error processing message from ${msg.from}: ${err.message}`);
-    io.emit('status', { message: `❌ Error processing message: ${err.message}` });
-    let logReportContent = '';
-    try {
-      logReportContent = readLatestLogTail(200);
-    } catch (readErr) {
-      logReportContent = `Error reading logs: ${readErr.message}... `;
-    }
-    await sendErrorEmail(msg.body, err.message, logReportContent);
+    // Add a mandatory 2-second cooldown between API calls to prevent rate limits
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
+
+  // Unlock the queue when finished
+  isProcessingQueue = false;
+  logger.info('✅ Message queue empty. Waiting for new messages.');
+  io.emit('status', { message: 'Queue empty. Standing by.' });
+}
+// --- END: BATCH PROCESSING WORKER ---
+
+
+// --- START: UPDATED MESSAGE LISTENER ---
+client.on('message', async (msg) => {
+  logger.info(`[RAW MESSAGE] From: ${msg.from}, IsGroup: ${msg.isGroup}`);
+  const isActuallyGroup = msg.isGroup === true || (typeof msg.isGroup === 'undefined' && msg.from.endsWith('@g.us'));
+  
+  if (!botAutomationEnabled || !isActuallyGroup || !SELLER_GROUP_IDS.includes(msg.from)) {
+    if (isActuallyGroup && SELLER_GROUP_IDS.includes(msg.from) && !botAutomationEnabled) {
+      try {
+        const chat = await msg.getChat();
+        logger.info(`Automation OFF: Skipped message from seller group "${chat.name}".`);
+      } catch (e) { }
+    } else if (!isActuallyGroup) {
+      try {
+        const contact = await msg.getContact();
+        logger.info(`DM from ${contact.pushname || contact.name}, skipped.`);
+      } catch (e) { }
+    } else {
+      try {
+        const chat = await msg.getChat();
+        logger.info(`Skipped message from non-seller group "${chat.name}" (${msg.from}).`);
+      } catch (e) { }
+    }
+    return; // Ignore unauthorized or disabled messages
+  }
+
+  logger.info(`Message intercepted from seller group ${msg.from}. Adding to queue...`);
+  
+  // 1. Push the message into the waiting line
+  messageQueue.push(msg);
+  io.emit('status', { message: `Message added to queue. Position: ${messageQueue.length}` });
+
+  // 2. Tell the worker to start processing (if it isn't already running)
+  processQueueSafely();
 });
+
+function processQueueSafely() {
+  processMessageQueue().catch(err => {
+    logger.error(`Critical Queue Error: ${err.message}`);
+    isProcessingQueue = false; // Reset lock on critical failure
+  });
+}
+// --- END: UPDATED MESSAGE LISTENER ---
 
 function saveMarketStats(stats) {
   let currentStats = {};
