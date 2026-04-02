@@ -1,4 +1,5 @@
-# WhatsApp Market Intelligence Bot
+# RAW-Read-Analyze-Write-bot-for-crop-dealers-in-whatsapp
+
 
 A powerful Node.js bot designed to automate the extraction, translation, and distribution of crop market offers received via WhatsApp. **Currently, over 1,000 agricultural brokers across Telangana rely on this bot for their day-to-day operations, with each instance deployed locally to ensure complete control and zero hosting costs.** It includes a user-friendly local web interface for easy management and monitoring.
 
@@ -33,7 +34,9 @@ This project was deliberately architected to circumvent the steep costs typicall
 
 ## 📸 Output Images
 
-<img width="3044" height="1841" alt="image" src="https://github.com/user-attachments/assets/a8dd900e-49fb-41e5-9efe-7e2c601bbeaf" /><img width="2681" height="672" alt="image" src="https://github.com/user-attachments/assets/ce048c07-978d-4057-8cd2-4e87c2a74ea3" /><img width="3839" height="1925" alt="image" src="https://github.com/user-attachments/assets/3b37da34-c176-4cf5-80f1-2adaed5cf844" /><img width="3839" height="1922" alt="image" src="https://github.com/user-attachments/assets/35120850-35aa-46bc-bed2-504500119e0f" /><img width="3271" height="2011" alt="image" src="https://github.com/user-attachments/assets/10deea25-fdff-4284-bda4-9b93357fb053" /><img width="2938" height="2006" alt="image" src="https://github.com/user-attachments/assets/ae5df5f5-25aa-46b3-9170-a03dbcb7a35d" /><img width="2931" height="1999" alt="image" src="https://github.com/user-attachments/assets/4060544d-811d-4bcf-96dc-4c80c2d357c2" /><img width="2706" height="2016" alt="image" src="https://github.com/user-attachments/assets/6f440680-d2fd-493b-9ec1-8b74826623da" /><img width="2954" height="1270" alt="image" src="https://github.com/user-attachments/assets/8ec3d6eb-a07e-42cf-b8ed-1d80237ad33d" /><img width="3003" height="2124" alt="image" src="https://github.com/user-attachments/assets/a4dd2f26-44bb-4d7e-b19c-68cfe569a053" /><img width="2977" height="2159" alt="image" src="https://github.com/user-attachments/assets/607cd10a-8a0f-4c91-853f-0365f3ba8916" /><img width="3004" height="2134" alt="image" src="https://github.com/user-attachments/assets/b80e78a5-1c8c-4e35-9e3d-ffeff2a6c53f" /><img width="2984" height="2122" alt="image" src="https://github.com/user-attachments/assets/ecb23b52-ae1d-4d22-b668-e4808a5cdeaf" />
+<img width="3044" height="1841" alt="image" src="https://github.com/user-attachments/assets/a8dd900e-49fb-41e5-9efe-7e2c601bbeaf" /><img width="2681" height="672" alt="image" src="https://github.com/user-attachments/assets/ce048c07-978d-4057-8cd2-4e87c2a74ea3" /><img width="3839" height="1925" alt="image" src="https://github.com/user-attachments/assets/3b37da34-c176-4cf5-80f1-2adaed5cf844" /><img width="3839" height="1922" alt="image" src="https://github.com/user-attachments/assets/35120850-35aa-46bc-bed2-504500119e0f" /><img width="3271" height="2011" alt="image" src="https://github.com/user-attachments/assets/10deea25-fdff-4284-bda4-9b93357fb053" /><img width="2938" height="2006" alt="image" src="https://github.com/user-attachments/assets/ae5df5f5-25aa-46b3-9170-a03dbcb7a35d" /><img width="2931" height="1999" alt="image" src="https://github.com/user-attachments/assets/4060544d-811d-4bcf-96dc-4c80c2d357c2" /><img width="2706" height="2016" alt="image" src="https://github.com/user-attachments/assets/6f440680-d2fd-493b-9ec1-8b74826623da" /><img width="2954" height="1270" alt="image" src="https://github.com/user-attachments/assets/8ec3d6eb-a07e-42cf-b8ed-1d80237ad33d" /><img width="3003" height="2124" alt="image" src="https://github.com/user-attachments/assets/a4dd2f26-44bb-4d7e-b19c-68cfe569a053" /><img width="2977" height="2159" alt="image" src="https://github.com/user-attachments/assets/607cd10a-8a0f-4c91-853f-0365f3ba8916" /><img width="3004" height="2134" alt="image" src="https://github.com/user-attachments/assets/b80e78a5-1c8c-4e35-9e3d-ffeff2a6c53f" /><img width="2984" height="2122" alt="image" src="https://github.com/user-attachments/assets/ecb23b52-ae1d-4d22-b668-e4808a5cdeaf" /><img width="3050" height="1938" alt="image" src="https://github.com/user-attachments/assets/dcd9d13b-ce45-4d17-9499-9df0d979b0a6" /><img width="2420" height="380" alt="image" src="https://github.com/user-attachments/assets/459e1d1f-06b0-4083-aa7b-2037b4d625fa" />
+
+
 
 
 
@@ -209,7 +212,7 @@ This outlines the key files and directories within your bot's project:
 
 If you need a tailored or more customized version of this bot designed specifically for your unique business operations, feel free to reach out! 
 
-📧 **Email me at:** [Insert your email address here]
+📧 **Email me at:** avinashsana2@gmail.com
 
 ## Contributing
 
