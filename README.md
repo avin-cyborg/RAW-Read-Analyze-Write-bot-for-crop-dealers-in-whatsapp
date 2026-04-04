@@ -1,7 +1,11 @@
 # RAW-Read-Analyze-Write-bot-for-crop-dealers-in-whatsapp
 
 
-A powerful Node.js bot designed to automate the extraction, translation, and distribution of crop market offers received via WhatsApp. **Currently, over 1,000 agricultural brokers across Telangana rely on this bot for their day-to-day operations, with each instance deployed locally to ensure complete control and zero hosting costs.** It includes a user-friendly local web interface for easy management and monitoring.
+A powerful Node.js bot designed to automate the extraction, translation, and distribution of crop market offers received via WhatsApp. **Currently, over 1,000s agricultural brokers across Telangana rely on this bot for their day-to-day operations, processiong lakhs of of messages everyday with each instance deployed locally to ensure complete control and zero hosting costs.** It includes a user-friendly local web interface for easy management and monitoring.
+
+### The repo has zero stars. That's because the people using it are farmers who've never opened GitHub. My team deployed it for them — locally, offline, on their own machines. No cloud bill, no subscription, no barrier. Just a thing that works for people who needed it to work.
+
+### THe bot has a simple UI with only one toggle button to turn on/off the bot. Agri-brokers toggle the button on during the morning and toggle it off end of the day and toggle it on again the next morning. This simple free tool has improved their efficieny by 100x and saving them a lot of time and energy.
 
 ## 🎯 Problem Statement & Design Philosophy
 
