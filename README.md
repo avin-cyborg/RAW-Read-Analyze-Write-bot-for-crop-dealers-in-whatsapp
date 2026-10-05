@@ -1,4 +1,4 @@
-# RAW-Read-Analyze-Write-bot-for-crop-dealers-in-whatsapp
+# RAW-Read-Analyze-Write-bot-for-agri-dealers-in-whatsapp
 
 
 A powerful Node.js bot designed to automate the extraction, translation, and distribution of crop market offers received via WhatsApp. **Currently, over 1,00s agricultural brokers across Telangana rely on this bot for their day-to-day operations, processiong thousands of of messages everyday with each instance deployed locally to ensure complete control and zero hosting costs.** It includes a user-friendly local web interface for easy management and monitoring.
@@ -14,7 +14,7 @@ This project was deliberately architected to circumvent the steep costs typicall
 * **`whatsapp-web.js` vs. WhatsApp Business API:** We deliberately chose `whatsapp-web.js` because it acts as a wrapper for WhatsApp Web, completely bypassing the expensive per-message costs and strict template approvals required by the official Meta/WhatsApp Business API.
 * **Google Gemini vs. ChatGPT:** We chose Google Gemini for our AI extraction engine because it offers a highly generous free tier (unlike OpenAI's ChatGPT, which charges for every API call), allowing the bot to process massive amounts of market data at zero cost to the user.
 
-## ✨ Features
+## Features
 
 * **WhatsApp Integration**: Connects to WhatsApp Web to monitor designated seller groups.
 * **AI-Powered Extraction**: Leverages Google Gemini to intelligently extract crop offer details from raw messages.
